@@ -52,14 +52,17 @@ class Calibration(object):
         :param pts_lidar: (N, 3)
         :return pts_rect: (N, 3)
         """
-        pts_rect_hom = self.cart_to_hom(pts_rect)  # (N, 4)
-        R0_ext = np.hstack((self.R0, np.zeros((3, 1), dtype=np.float32)))  # (3, 4)
-        R0_ext = np.vstack((R0_ext, np.zeros((1, 4), dtype=np.float32)))  # (4, 4)
-        R0_ext[3, 3] = 1
-        V2C_ext = np.vstack((self.V2C, np.zeros((1, 4), dtype=np.float32)))  # (4, 4)
+        pts_rect_hom = self.cart_to_hom(pts_rect)  # (N, 4) (x,y,z) -> (x,y,z,1)
+        R0_ext = np.hstack((self.R0, np.zeros((3, 1), dtype=np.float32)))  # (3, 4) (identity for vod)
+        R0_ext = np.vstack((R0_ext, np.zeros((1, 4), dtype=np.float32)))  # (4, 4) (identity) 
+        R0_ext[3, 3] = 1 # identity
+        V2C_ext = np.vstack((self.V2C, np.zeros((1, 4), dtype=np.float32)))  # (4, 4) Tr_velo_to_cam (in hom)
         V2C_ext[3, 3] = 1
-
+        
+        #         for all: obj_centers(xyz1) * (cam_to_velo)                                                               
         pts_lidar = np.dot(pts_rect_hom, np.linalg.inv(np.dot(R0_ext, V2C_ext).T))
+        # so all pts in camera coordinates (obj center) is now in (lidar coordinates)
+
         return pts_lidar[:, 0:3]
 
     def lidar_to_rect(self, pts_lidar):
